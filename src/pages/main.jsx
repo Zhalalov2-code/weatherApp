@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import "../css/main.css";
 
 function WeatherApp() {
@@ -8,28 +8,28 @@ function WeatherApp() {
     const [error, setError] = useState(null);
     const [lastUpdated, setLastUpdated] = useState(null);
     const [selectedDay, setSelectedDay] = useState(null);
-    const [viewMode, setViewMode] = useState('daily'); 
+    const [viewMode, setViewMode] = useState('daily');
 
     const apiKey = '0b08ddd8b5c04645b1e170224252803';
     const location = 'auto:ip';
     const days = 3;
 
-    async function fetchWeather() {
+    const fetchWeather = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
 
             const response = await axios({
                 method: 'get',
-                url: 'http://api.weatherapi.com/v1/forecast.json',
+                url: 'https://api.weatherapi.com/v1/forecast.json',
                 params: {
                     key: apiKey,
                     q: location,
                     days: days,
                     lang: 'ru'
                 }
-            })
-            
+            });
+
             setForecast(response.data);
             setLastUpdated(new Date());
             if (!selectedDay && response.data?.forecast?.forecastday?.length > 0) {
@@ -41,13 +41,13 @@ function WeatherApp() {
         } finally {
             setLoading(false);
         }
-    }
+    }, [apiKey, location, days, selectedDay]);
 
     useEffect(() => {
         fetchWeather();
         const intervalID = setInterval(fetchWeather, 60000);
         return () => clearInterval(intervalID);
-    }, []);
+    }, [fetchWeather]);
 
     const handleDayClick = (day) => {
         setSelectedDay(day);
@@ -132,21 +132,21 @@ function WeatherApp() {
                     {viewMode === 'daily' ? (
                         <div className="forecast-days">
                             {forecast.forecast.forecastday.map((day, index) => (
-                                <div 
-                                    key={index} 
+                                <div
+                                    key={index}
                                     className={`forecast-day ${selectedDay?.date === day.date ? 'selected' : ''}`}
                                     onClick={() => handleDayClick(day)}
                                 >
                                     <h4>
-                                        {new Date(day.date).toLocaleDateString('ru-RU', { 
-                                            weekday: 'short', 
-                                            day: 'numeric', 
-                                            month: 'short' 
+                                        {new Date(day.date).toLocaleDateString('ru-RU', {
+                                            weekday: 'short',
+                                            day: 'numeric',
+                                            month: 'short'
                                         })}
                                     </h4>
-                                    <img 
-                                        src={`https:${day.day.condition.icon}`} 
-                                        alt={day.day.condition.text} 
+                                    <img
+                                        src={`https:${day.day.condition.icon}`}
+                                        alt={day.day.condition.text}
                                     />
                                     <div className="forecast-temp">
                                         <span className="max-temp">{day.day.maxtemp_c}°</span>
@@ -163,28 +163,28 @@ function WeatherApp() {
                     ) : (
                         <div className="hourly-forecast">
                             <h4 className="selected-day-title">
-                                {new Date(selectedDay.date).toLocaleDateString('ru-RU', { 
-                                    weekday: 'long', 
-                                    day: 'numeric', 
-                                    month: 'long' 
+                                {new Date(selectedDay.date).toLocaleDateString('ru-RU', {
+                                    weekday: 'long',
+                                    day: 'numeric',
+                                    month: 'long'
                                 })}
                             </h4>
-                            
+
                             <div className="hourly-scroll-container">
                                 {selectedDay.hour.map((hour, index) => {
                                     const hourDate = new Date(hour.time);
-                                    const isCurrentHour = new Date().getHours() === hourDate.getHours() && 
-                                                         new Date().toDateString() === hourDate.toDateString();
-                                    
+                                    const isCurrentHour = new Date().getHours() === hourDate.getHours() &&
+                                        new Date().toDateString() === hourDate.toDateString();
+
                                     return (
-                                        <div 
-                                            key={index} 
+                                        <div
+                                            key={index}
                                             className={`hour-item ${isCurrentHour ? 'current-hour' : ''}`}
                                         >
                                             <p className="hour-time">{hourDate.getHours()}:00</p>
-                                            <img 
-                                                src={`https:${hour.condition.icon}`} 
-                                                alt={hour.condition.text} 
+                                            <img
+                                                src={`https:${hour.condition.icon}`}
+                                                alt={hour.condition.text}
                                                 className="hour-icon"
                                             />
                                             <p className="hour-temp">{hour.temp_c}°</p>
